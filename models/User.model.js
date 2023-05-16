@@ -18,6 +18,14 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Name is required."],
     },
+    address: { type: [String] },
+    imgUrl: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/df3vc4osi/image/upload/v1684236881/titaWebsite/star-wars-is-grogu-related-to-yoda_pe3x9t.webp",
+    },
+    favourites: [{ type: Schema.Types.ObjectId, ref: "Product" }],
+    admin: { type: String },
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

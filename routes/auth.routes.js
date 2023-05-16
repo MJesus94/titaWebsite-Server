@@ -4,6 +4,8 @@ const router = express.Router();
 // ℹ️ Handles password encryption
 const bcrypt = require("bcrypt");
 
+const dns = require("dns");
+
 // ℹ️ Handles password encryption
 const jwt = require("jsonwebtoken");
 
@@ -16,24 +18,39 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 // How many rounds should bcrypt run the salt (default - 10 rounds)
 const saltRounds = 10;
 
+//function to check if the email domain exists!
+
+function checkEmailDomain(email) {
+  return new Promise((resolve, reject) => {
+    const domain = email.substring(email.lastIndexOf("@") + 1);
+    dns.resolveMx(domain, (err, addresses) => {
+      if (err || addresses.length === 0) {
+        resolve(false); // Domain does not exist or has no MX records
+      } else {
+        resolve(true); // Domain exists
+      }
+    });
+  });
+}
+
 // POST /auth/signup  - Creates a new user in the database
-router.post("/signup", (req, res, next) => {
+/* router.post("/signup", (req, res, next) => {
   const { email, password, name } = req.body;
 
   // Check if email or password or name are provided as empty strings
   if (email === "" || password === "" || name === "") {
-    res.status(400).json({ message: "Provide email, password and name" });
+    res.status(400).json({ message: "Provide email, password, and name" });
     return;
   }
 
-  // This regular expression check that the email is of a valid format
+  // This regular expression checks that the email is of a valid format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!emailRegex.test(email)) {
     res.status(400).json({ message: "Provide a valid email address." });
     return;
   }
 
-  // This regular expression checks password for special characters and minimum length
+  // This regular expression checks the password for special characters and minimum length
   const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
   if (!passwordRegex.test(password)) {
     res.status(400).json({
@@ -52,26 +69,129 @@ router.post("/signup", (req, res, next) => {
         return;
       }
 
-      // If email is unique, proceed to hash the password
-      const salt = bcrypt.genSaltSync(saltRounds);
-      const hashedPassword = bcrypt.hashSync(password, salt);
+      // Add the code to check the email domain
+      checkEmailDomain(email, (domainExists) => {
+        if (domainExists) {
+          // If the email domain exists, proceed to hash the password
+          const salt = bcrypt.genSaltSync(saltRounds);
+          const hashedPassword = bcrypt.hashSync(password, salt);
 
-      // Create the new user in the database
-      // We return a pending promise, which allows us to chain another `then`
-      return User.create({ email, password: hashedPassword, name });
-    })
-    .then((createdUser) => {
-      // Deconstruct the newly created user object to omit the password
-      // We should never expose passwords publicly
-      const { email, name, _id } = createdUser;
+          // Create the new user in the database
+          return User.create({ email, password: hashedPassword, name })
+            .then((createdUser) => {
+              // Deconstruct the newly created user object to omit the password
+              // We should never expose passwords publicly
+              const { email, name, _id } = createdUser;
 
-      // Create a new object that doesn't expose the password
-      const user = { email, name, _id };
+              // Create a new object that doesn't expose the password
+              const user = { email, name, _id };
 
-      // Send a json response containing the user object
-      res.status(201).json({ user: user });
+              // Send a JSON response containing the user object
+              res.status(201).json({ user: user });
+            })
+            .catch((err) => next(err)); // In this case, we send error handling to the error handling middleware.
+        } else {
+          // If the email domain does not exist, send an error response
+          res.status(400).json({ message: "Email domain does not exist." });
+        }
+      });
     })
     .catch((err) => next(err)); // In this case, we send error handling to the error handling middleware.
+}); */
+
+// POST /auth/signup  - Creates a new user in the database
+router.post("/signup", async (req, res, next) => {
+  // Check the users collection if a user with the same email already exists
+  try {
+    const { email, password, name, admin } = req.body;
+
+    // Check if email or password or name are provided as empty strings
+    if (email === "" || password === "" || name === "") {
+      res.status(400).json({ message: "Provide email, password, and name" });
+      return;
+    }
+
+    // This regular expression checks that the email is of a valid format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ message: "Provide a valid email address." });
+      return;
+    }
+
+    // This regular expression checks the password for special characters and minimum length
+    const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
+    if (!passwordRegex.test(password)) {
+      res.status(400).json({
+        message:
+          "Password must have at least 6 characters and contain at least one number, one lowercase and one uppercase letter.",
+      });
+      return;
+    }
+
+    const foundUser = await User.findOne({ email });
+    const foundUserN = await User.findOne({ name });
+    if (foundUser) {
+      res.status(400).json({ message: "User already exists." });
+      return;
+    }
+
+    if (foundUserN) {
+      res.status(400).json({ message: "Username already exists." });
+      return;
+    }
+
+    // Add the code to check the email domain
+    const domainExists = await checkEmailDomain(email);
+
+    if (domainExists) {
+      // If the email domain exists, proceed to hash the password and create the user
+      const salt = bcrypt.genSaltSync(saltRounds);
+      const hashedPassword = bcrypt.hashSync(password, salt);
+      if (admin) {
+        const createdUser = await User.create({
+          email,
+          password: hashedPassword,
+          name,
+          admin,
+        });
+
+        // Deconstruct the newly created user object to omit the password
+        const {
+          email: createdEmail,
+          name: createdName,
+          _id,
+          admin: createdAdmin,
+        } = createdUser;
+
+        const user = {
+          email: createdEmail,
+          name: createdName,
+          _id,
+          admin: createdAdmin,
+        };
+
+        res.status(201).json({ user });
+      } else {
+        const createdUser = await User.create({
+          email,
+          password: hashedPassword,
+          name,
+        });
+
+        // Deconstruct the newly created user object to omit the password
+        const { email: createdEmail, name: createdName, _id } = createdUser;
+
+        const user = { email: createdEmail, name: createdName, _id };
+
+        res.status(201).json({ user });
+      }
+    } else {
+      // If the email domain does not exist, send an error response
+      res.status(400).json({ message: "Email domain does not exist." });
+    }
+  } catch (err) {
+    next(err); // Send error handling to the error handling middleware
+  }
 });
 
 // POST  /auth/login - Verifies email and password and returns a JWT

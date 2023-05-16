@@ -14,6 +14,9 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 const FRONTEND_URL = process.env.ORIGIN || "http://localhost:3000";
+// Connects the mongo uri to maintain the same naming structure
+const MONGO_URI =
+  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/titaWebsite";
 
 // Middleware configuration
 module.exports = (app) => {
@@ -24,6 +27,7 @@ module.exports = (app) => {
   // controls a very specific header to pass headers from the frontend
   app.use(
     cors({
+      credentials: true,
       origin: [FRONTEND_URL],
     })
   );
