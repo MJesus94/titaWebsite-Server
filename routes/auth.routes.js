@@ -104,6 +104,7 @@ router.post("/signup", async (req, res, next) => {
   // Check the users collection if a user with the same email already exists
   try {
     const { email, password, name, admin } = req.body;
+    console.log(name);
 
     // Check if email or password or name are provided as empty strings
     if (email === "" || password === "" || name === "") {
