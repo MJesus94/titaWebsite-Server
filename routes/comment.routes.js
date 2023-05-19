@@ -18,9 +18,9 @@ router.post("/createComment/:id", isAuthenticated, async (req, res, next) => {
 
   try {
     const newComment = await Comment.create({comment});
-    await Product.findByIdAndUpdate(id, {$push: { comments: newComment._id }})
-    await Comment.findByIdAndUpdate(newComment._id, {$push: { userId: idUser}})
-    await Comment.findByIdAndUpdate(newComment._id, {$push: { productId: id }})
+    await Product.findByIdAndUpdate(id, {$push: { comments: newComment._id }}, {new: true})
+    await Comment.findByIdAndUpdate(newComment._id, {$push: { userId: idUser}}, {new: true})
+    await Comment.findByIdAndUpdate(newComment._id, {$push: { productId: id }}, {new: true})
     res.json(newComment)
   } catch (error) {
     res.json(error);

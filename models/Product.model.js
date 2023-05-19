@@ -7,7 +7,8 @@ const productSchema = new Schema(
       description:{type: String},
       category: {type: String, required: true},
       comments: [{type: Schema.Types.ObjectId, ref: 'Comment'}],
-      price: {type: String, required: true}
+      price: {type: Number, required: true},
+      cardSize: {type: String, required: true},
     },
     {
       // this second object adds extra properties: `createdAt` and `updatedAt`

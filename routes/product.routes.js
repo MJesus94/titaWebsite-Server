@@ -10,11 +10,23 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 //Create a Post and put the ID in the User Database
 
 router.post("/product", isAuthenticated, async (req, res, next) => {
-  const { title, imgUrl, description, category, price } = req.body;
+  const { title, imgUrl, description, category, price, cardSize } = req.body;
   try {
-    const product = await Product.create({ title, imgUrl, description, category, price });
-    console.log(product);
-    res.json(product);
+    if (!title || !imgUrl || !category || !price || !cardSize) {
+      res.status(400).json({ message: "Fill all the mandatory fields" });
+      return;
+    } else {
+      const product = await Product.create({
+        title,
+        imgUrl,
+        description,
+        category,
+        price,
+        cardSize,
+      });
+      console.log(product);
+      res.json(product);
+    }
   } catch (error) {
     res.json(error);
   }
@@ -57,7 +69,7 @@ router.get("/product/:id", async (req, res, next) => {
       .populate({
         path: "comments",
         populate: { path: "userId", model: "User" },
-      })
+      });
     res.json(product);
   } catch (error) {
     res.json(error);
@@ -68,14 +80,14 @@ router.get("/product/:id", async (req, res, next) => {
 
 router.put("/editProduct/:id", async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, category, price } = req.body;
+  const { title, description, category, price, cardSize } = req.body;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.json("The provided id is not valid");
   }
   try {
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      { title, description, category, price },
+      { title, description, category, price, cardSize },
       { new: true }
     ).populate("comments");
 
@@ -145,6 +157,7 @@ router.delete(
     }
   }
 );
+
 router.get("/checkFavourite/:id", isAuthenticated, async (req, res, next) => {
   const { id } = req.params;
   let verify = false;
@@ -155,10 +168,10 @@ router.get("/checkFavourite/:id", isAuthenticated, async (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.json("The provided id is not valid");
   }
-  
+
   try {
     const response = await User.findById(currentUser);
-    
+
     console.log(response.data);
     for (let i = 0; i < response.data.favourites.length; i++) {
       if (id === response.data.favourites[i]._id) {
@@ -174,13 +187,5 @@ router.get("/checkFavourite/:id", isAuthenticated, async (req, res, next) => {
     res.json(error);
   }
 });
+
 module.exports = router;
-
-
-
-
-
-
-
-
-
