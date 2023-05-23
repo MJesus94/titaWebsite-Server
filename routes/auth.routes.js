@@ -8,11 +8,9 @@ const crypto = require("crypto");
 
 const dns = require("dns");
 
-const sgMail = require ('@sendgrid/mail')
+const sgMail = require("@sendgrid/mail");
 
-const API_KEY= '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';
-
-sgMail.setApiKey(API_KEY)
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ℹ️ Handles password encryption
 const jwt = require("jsonwebtoken");
@@ -26,15 +24,13 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 // How many rounds should bcrypt run the salt (default - 10 rounds)
 const saltRounds = 10;
 
-
-
 function generateConfirmationCode() {
   const length = 8; // Length of the confirmation code
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
   let code = "";
   let bytes;
-  
+
   // Generate random bytes using a secure cryptographic algorithm
   try {
     bytes = crypto.randomBytes(length);
@@ -51,7 +47,6 @@ function generateConfirmationCode() {
 
   return code;
 }
-
 
 //function to check if the email domain exists!
 
@@ -134,7 +129,12 @@ router.post("/signup", async (req, res, next) => {
     };
     await sgMail.send(msg);
 
-    const { email: createdEmail, name: createdName, _id, admin: createdAdmin } = createdUser;
+    const {
+      email: createdEmail,
+      name: createdName,
+      _id,
+      admin: createdAdmin,
+    } = createdUser;
 
     const user = {
       email: createdEmail,
