@@ -26,6 +26,8 @@ const userSchema = new Schema(
     },
     favourites: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     admin: { type: String },
+    confirmationCode: {type: String},
+    isEmailConfirmed: {type: Boolean},
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`
