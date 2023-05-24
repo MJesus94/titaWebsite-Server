@@ -123,7 +123,7 @@ router.post("/signup", async (req, res, next) => {
 
     const msg = {
       to: email,
-      from: "miguel.angelo.jesus@hotmail.com", // Replace with your email address
+      from: "miguel.angelo.jesus@hotmail.com",
       subject: "Email Confirmation",
       html: `Please confirm your email by clicking the following link: <a href="${process.env.BASE_URL}/confirm-email/${confirmationCode}">Confirm Email</a>`,
     };
@@ -135,15 +135,15 @@ router.post("/signup", async (req, res, next) => {
       _id,
       admin: createdAdmin,
     } = createdUser;
-
-    const user = {
+    
+    const userData = {
       email: createdEmail,
       name: createdName,
       _id,
       admin: createdAdmin,
     };
-
-    res.status(201).json({ user });
+    
+    res.status(201).json({ user: userData });
   } catch (err) {
     next(err);
   }
@@ -201,6 +201,31 @@ router.get("/verify", isAuthenticated, (req, res, next) => {
 
   // Send back the token payload object containing the user data
   res.status(200).json(req.payload);
+});
+
+router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
+  try {
+    const { confirmationCode } = req.params;
+
+    // Find the user with the matching confirmation code
+    const user = await User.findOne({ confirmationCode });
+
+    if (!user) {
+      // Invalid confirmation code
+      res.status(400).json({ message: "Invalid confirmation code." });
+      return;
+    }
+
+    // Mark the user's email as confirmed
+    user.isEmailConfirmed = true;
+    user.confirmationCode = null;
+    await user.save();
+
+    // Redirect the user to a confirmation success page or send a success response
+    res.status(200).json({ message: "Email confirmed successfully." });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;
