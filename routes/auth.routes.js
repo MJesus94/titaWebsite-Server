@@ -71,6 +71,7 @@ router.post("/signup", async (req, res, next) => {
     // Validate email, password, and name
     if (!email || !password || !name) {
       res.status(400).json({ message: "Provide email, password, and name" });
+      console.log("Provide email, password, and name");
       return;
     }
 
@@ -79,6 +80,7 @@ router.post("/signup", async (req, res, next) => {
 
     if (!emailRegex.test(email)) {
       res.status(400).json({ message: "Provide a valid email address." });
+      console.log("Provide a valid email address.");
       return;
     }
 
@@ -87,14 +89,17 @@ router.post("/signup", async (req, res, next) => {
         message:
           "Password must have at least 6 characters and contain at least one number, one lowercase and one uppercase letter.",
       });
+      console.log(
+        "Password must have at least 6 characters and contain at least one number, one lowercase and one uppercase letter."
+      );
       return;
     }
 
     const foundUser = await User.findOne({ email });
-    const foundUserN = await User.findOne({ name });
 
-    if (foundUser || foundUserN) {
-      res.status(400).json({ message: "User or username already exists." });
+    if (foundUser) {
+      res.status(400).json({ message: "Email already exists" });
+      console.log("Email already exists");
       return;
     }
 
@@ -102,6 +107,7 @@ router.post("/signup", async (req, res, next) => {
 
     if (!domainExists) {
       res.status(400).json({ message: "Email domain does not exist." });
+      console.log("Email domain does not exist.");
       return;
     }
 
@@ -135,15 +141,17 @@ router.post("/signup", async (req, res, next) => {
       _id,
       admin: createdAdmin,
     } = createdUser;
-    
+
     const userData = {
       email: createdEmail,
       name: createdName,
       _id,
       admin: createdAdmin,
     };
-    
-    res.status(201).json({ user: userData });
+
+    res
+      .status(201)
+      .json({ message: "Account created with success", user: userData });
   } catch (err) {
     next(err);
   }
@@ -206,6 +214,7 @@ router.get("/verify", isAuthenticated, (req, res, next) => {
 router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
   try {
     const { confirmationCode } = req.params;
+    console.log(confirmationCode)
 
     // Find the user with the matching confirmation code
     const user = await User.findOne({ confirmationCode });
@@ -222,7 +231,7 @@ router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
     await user.save();
 
     // Redirect the user to a confirmation success page or send a success response
-    res.status(200).json({ message: "Email confirmed successfully." });
+    res.status(200).json({ message: "Email confirmed successfully."});
   } catch (err) {
     next(err);
   }
