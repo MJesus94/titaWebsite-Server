@@ -175,7 +175,9 @@ router.post("/login", (req, res, next) => {
         res.status(401).json({ message: "User not found." });
         return;
       }
-
+      if (foundUser.isEmailConfirmed === false) {
+        res.status(401).json({ message: "Please confirm your email first" });
+      }
       // Compare the provided password with the one saved in the database
       const passwordCorrect = bcrypt.compareSync(password, foundUser.password);
 
@@ -214,7 +216,7 @@ router.get("/verify", isAuthenticated, (req, res, next) => {
 router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
   try {
     const { confirmationCode } = req.params;
-    console.log(confirmationCode)
+    console.log(confirmationCode);
 
     // Find the user with the matching confirmation code
     const user = await User.findOne({ confirmationCode });
@@ -231,7 +233,7 @@ router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
     await user.save();
 
     // Redirect the user to a confirmation success page or send a success response
-    res.status(200).json({ message: "Email confirmed successfully."});
+    res.status(200).json({ message: "Email confirmed successfully." });
   } catch (err) {
     next(err);
   }

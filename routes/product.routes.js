@@ -10,9 +10,13 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 //Create a Post and put the ID in the User Database
 
 router.post("/product", isAuthenticated, async (req, res, next) => {
-  const { title, imgUrl, description, category, price, cardSize } = req.body;
+  const { title, imgUrl, description, category, price, cardSize, color } =
+    req.body;
+  console.log(
+    `${title}, ${imgUrl}, ${description}, ${category}, ${price}, ${cardSize}, ${color}`
+  );
   try {
-    if (!title || !imgUrl || !category || !price || !cardSize) {
+    if (!title || !imgUrl || !category || !price || !cardSize || !color) {
       res.status(400).json({ message: "Fill all the mandatory fields" });
       return;
     } else {
@@ -23,6 +27,7 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
         category,
         price,
         cardSize,
+        color,
       });
       console.log(product);
       res.json(product);
@@ -80,14 +85,14 @@ router.get("/product/:id", async (req, res, next) => {
 
 router.put("/editProduct/:id", async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, category, price, cardSize } = req.body;
+  const { title, description, category, price, cardSize, color } = req.body;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.json("The provided id is not valid");
   }
   try {
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      { title, description, category, price, cardSize },
+      { title, description, category, price, cardSize, color },
       { new: true }
     ).populate("comments");
 

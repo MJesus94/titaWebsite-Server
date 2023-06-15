@@ -9,6 +9,7 @@ const productSchema = new Schema(
       comments: [{type: Schema.Types.ObjectId, ref: 'Comment'}],
       price: {type: Number, required: true},
       cardSize: {type: String, required: true},
+      color: {type:[String], required: true}
     },
     {
       // this second object adds extra properties: `createdAt` and `updatedAt`
