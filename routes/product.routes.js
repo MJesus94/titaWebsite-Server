@@ -12,13 +12,27 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 router.post("/product", isAuthenticated, async (req, res, next) => {
   const { title, imgUrl, description, category, price, cardSize, color } =
     req.body;
+  let compareTitle = title.toLowerCase();
   console.log(
     `${title}, ${imgUrl}, ${description}, ${category}, ${price}, ${cardSize}, ${color}`
   );
   try {
+    const foundTitle = await Product.findOne({ title });
     if (!title || !imgUrl || !category || !price || !cardSize || !color) {
-      res.status(400).json({ message: "Fill all the mandatory fields" });
+      const missingFields = [];
+      if (!title) missingFields.push("title");
+      if (!imgUrl) missingFields.push("imgUrl");
+      if (!category) missingFields.push("category");
+      if (!price) missingFields.push("price");
+      if (!cardSize) missingFields.push("cardSize");
+      if (!color) missingFields.push("color");
+
+      res.status(400).json({ message: "needs to be filled", missingFields });
       return;
+    } else if (foundTitle || compareTitle === title) {
+      res.status(400).json({
+        message: "Esse nome já foi dado a outro Produto, escolha um novo.",
+      });
     } else {
       const product = await Product.create({
         title,
