@@ -16,7 +16,6 @@ require("./config")(app);
 
 // 👇 Start handling routes here
 
-
 const indexRoutes = require("./routes/index.routes");
 app.use("/api", indexRoutes);
 
@@ -32,9 +31,13 @@ app.use("/api", userRoutes);
 const authRoutes = require("./routes/auth.routes");
 app.use("/auth", authRoutes);
 
+// ❗ Error handling middleware should be placed after defining routes
+
+// Middleware to handle JWT errors
+const { handleJWTError } = require("./middleware/jwt.middleware.js");
+app.use(handleJWTError);
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
 require("./error-handling")(app);
-
 
 module.exports = app;

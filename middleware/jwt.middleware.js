@@ -1,4 +1,4 @@
-const { expressjwt: jwt } = require("express-jwt");
+const { expressjwt: jwt, UnauthorizedError } = require("express-jwt");
 
 // Instantiate the JWT token validation middleware
 const isAuthenticated = jwt({
@@ -7,6 +7,19 @@ const isAuthenticated = jwt({
   requestProperty: "payload",
   getToken: getTokenFromHeaders,
 });
+
+// Custom error handling middleware to handle JWT errors
+function handleJWTError(err, req, res, next) {
+  if (err instanceof UnauthorizedError && err.code === "invalid_token") {
+    // Token expired
+    return res
+      .status(401)
+      .json({ message: "Your session has expired, please login again" });
+  }
+
+  // Pass the error to the next error handler
+  next(err);
+}
 
 // Function used to extract the JWT token from the request's 'Authorization' Headers
 function getTokenFromHeaders(req) {
@@ -23,7 +36,8 @@ function getTokenFromHeaders(req) {
   return null;
 }
 
-// Export the middleware so that we can use it to create protected routes
+// Export the middleware and error handler
 module.exports = {
   isAuthenticated,
+  handleJWTError,
 };
