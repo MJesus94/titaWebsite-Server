@@ -15,8 +15,6 @@ router.get("/getUser", isAuthenticated, async (req, res, next) => {
   }
 });
 
-
-
 router.get("/getUser/:id", isAuthenticated, async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -26,7 +24,7 @@ router.get("/getUser/:id", isAuthenticated, async (req, res, next) => {
         path: "favourites",
         populate: { path: "comments", model: "Comment" },
       });
-      
+
     res.json(specificUser);
   } catch (error) {
     res.json(error);
@@ -38,8 +36,12 @@ router.get("/getUser/:id", isAuthenticated, async (req, res, next) => {
 router.put("/editUser", isAuthenticated, async (req, res, next) => {
   const { username, imgUrl, address } = req.body;
   try {
-   const updatedUser = await User.findByIdAndUpdate(req.payload._id, {username, imgUrl, address}, {new: true}); 
-   res.json(updatedUser);
+    const updatedUser = await User.findByIdAndUpdate(
+      req.payload._id,
+      { username, imgUrl, address },
+      { new: true }
+    );
+    res.json(updatedUser);
   } catch (error) {
     res.json(error);
   }

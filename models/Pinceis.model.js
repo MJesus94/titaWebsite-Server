@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose");
 
-const productSchema = new Schema(
+const pinceisSchema = new Schema(
   {
     title: { type: String, required: true, unique: true },
     imgUrl: { type: String, required: true },
@@ -10,6 +10,9 @@ const productSchema = new Schema(
     price: { type: Number, required: true },
     cardSize: { type: String, required: true },
     color: { type: [String], required: true },
+    tema: { type: String, required: true },
+    formato: { type: String, required: true },
+    tamanho: { type: String, required: true },
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`
@@ -17,6 +20,6 @@ const productSchema = new Schema(
   }
 );
 
-const Product = model("Product", productSchema);
+const Pinceis = model("Pinceis", pinceisSchema);
 
-module.exports = Product;
+module.exports = Pinceis;

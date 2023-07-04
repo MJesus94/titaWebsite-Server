@@ -9,7 +9,7 @@ const isAuthenticated = jwt({
 });
 
 // Custom error handling middleware to handle JWT errors
-function handleJWTError(err, req, res, next) {
+/* function handleJWTError(err, req, res, next) {
   if (err instanceof UnauthorizedError && err.code === "invalid_token") {
     // Token expired
     return res
@@ -19,8 +19,7 @@ function handleJWTError(err, req, res, next) {
 
   // Pass the error to the next error handler
   next(err);
-}
-
+} */
 // Function used to extract the JWT token from the request's 'Authorization' Headers
 function getTokenFromHeaders(req) {
   // Check if the token is available on the request Headers
@@ -37,7 +36,4 @@ function getTokenFromHeaders(req) {
 }
 
 // Export the middleware and error handler
-module.exports = {
-  isAuthenticated,
-  handleJWTError,
-};
+module.exports = { isAuthenticated };

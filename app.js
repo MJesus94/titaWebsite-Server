@@ -34,8 +34,8 @@ app.use("/auth", authRoutes);
 // ❗ Error handling middleware should be placed after defining routes
 
 // Middleware to handle JWT errors
-const { handleJWTError } = require("./middleware/jwt.middleware.js");
-app.use(handleJWTError);
+// const { handleJWTError } = // require("./middleware/jwt.middleware.js");
+// app.use(handleJWTError);
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
 require("./error-handling")(app);

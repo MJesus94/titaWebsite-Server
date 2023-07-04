@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const Product = require("../models/Product.model");
+const Linhas = require("../models/Linhas.model");
+const Pinceis = require("../models/Pinceis.model");
+const Panelas = require("../models/Panelas.model");
 const Comment = require("../models/Comment.model");
 const User = require("../models/User.model");
 const fileUploader = require("../config/cloudinary.config");
@@ -10,15 +12,26 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 //Create a Post and put the ID in the User Database
 
 router.post("/product", isAuthenticated, async (req, res, next) => {
-  const { title, imgUrl, description, category, price, cardSize, color } =
-    req.body;
-  let compareTitle = title.toLowerCase();
-  console.log(
-    `${title}, ${imgUrl}, ${description}, ${category}, ${price}, ${cardSize}, ${color}`
-  );
+  const { category, title, imgUrl, price, cardSize, color } = req.body;
+
   try {
-    const foundTitle = await Product.findOne({ title });
-    if (!title || !imgUrl || !category || !price || !cardSize || !color) {
+    const foundTitle = await Linhas.findOne({
+      title: { $regex: new RegExp(`^${title}$`, "i") },
+    });
+    const foundTitle2 = await Pinceis.findOne({
+      title: { $regex: new RegExp(`^${title}$`, "i") },
+    });
+    const foundTitle3 = await Panelas.findOne({
+      title: { $regex: new RegExp(`^${title}$`, "i") },
+    });
+    if (
+      !title ||
+      !imgUrl ||
+      !category ||
+      !price ||
+      !cardSize ||
+      color.length === 0
+    ) {
       const missingFields = [];
       if (!title) missingFields.push("title");
       if (!imgUrl) missingFields.push("imgUrl");
@@ -29,12 +42,17 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
 
       res.status(400).json({ message: "needs to be filled", missingFields });
       return;
-    } else if (foundTitle || compareTitle === title) {
-      res.status(400).json({
+    } else if (foundTitle || foundTitle2 || foundTitle3) {
+      return res.status(400).json({
         message: "Esse nome já foi dado a outro Produto, escolha um novo.",
       });
-    } else {
-      const product = await Product.create({
+    }
+
+    let product;
+
+    if (category === "Linhas") {
+      const { description } = req.body;
+      product = await Linhas.create({
         title,
         imgUrl,
         description,
@@ -43,11 +61,41 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
         cardSize,
         color,
       });
-      console.log(product);
-      res.json(product);
+    } else if (category === "Pincéis") {
+      const { description, tema, formato, tamanho } = req.body;
+      product = await Pinceis.create({
+        title,
+        imgUrl,
+        description,
+        category,
+        price,
+        cardSize,
+        color,
+        tema,
+        formato,
+        tamanho,
+      });
+    } else {
+      const { description, cobertura, formato, massa } = req.body;
+      product = await Panelas.create({
+        title,
+        imgUrl,
+        description,
+        category,
+        price,
+        cardSize,
+        color,
+        cobertura,
+        formato,
+        massa,
+      });
     }
+
+    res.json(product);
   } catch (error) {
-    res.json(error);
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+    return;
   }
 });
 
@@ -67,12 +115,15 @@ router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
   res.json({ fileUrl: req.file.path });
 });
 
-//Get all existing posts in the database
+//Get all existing products in the database
 
 router.get("/product", async (req, res, next) => {
   try {
-    const Products = await Product.find();
-    res.json(Products);
+    const ProductLinhas = await Linhas.find();
+    const ProductPinceis = await Pinceis.find();
+    const ProductPanelas = await Panelas.find();
+    console.log({ ProductLinhas, ProductPinceis, ProductPanelas });
+    res.json({ ProductLinhas, ProductPinceis, ProductPanelas });
   } catch (error) {
     res.json(error);
   }
