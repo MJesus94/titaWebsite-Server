@@ -119,11 +119,11 @@ router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
 
 router.get("/product", async (req, res, next) => {
   try {
-    const ProductLinhas = await Linhas.find();
-    const ProductPinceis = await Pinceis.find();
-    const ProductPanelas = await Panelas.find();
-    console.log({ ProductLinhas, ProductPinceis, ProductPanelas });
-    res.json({ ProductLinhas, ProductPinceis, ProductPanelas });
+    const productLinhas = await Linhas.find();
+    const productPinceis = await Pinceis.find();
+    const productPanelas = await Panelas.find();
+    console.log({ productLinhas, productPinceis, productPanelas });
+    res.json({ productLinhas, productPinceis, productPanelas });
   } catch (error) {
     res.json(error);
   }
@@ -134,13 +134,34 @@ router.get("/product", async (req, res, next) => {
 router.get("/product/:id", async (req, res, next) => {
   const { id } = req.params;
   try {
-    const product = await Product.findById(id)
+    const productLinhas = await Linhas.findById(id)
       .populate("comments")
       .populate({
         path: "comments",
         populate: { path: "userId", model: "User" },
       });
-    res.json(product);
+    const productPinceis = await Pinceis.findById(id)
+      .populate("comments")
+      .populate({
+        path: "comments",
+        populate: { path: "userId", model: "User" },
+      });
+    const productPanelas = await Panelas.findById(id)
+      .populate("comments")
+      .populate({
+        path: "comments",
+        populate: { path: "userId", model: "User" },
+      });
+
+    if (productLinhas) {
+      res.json(productLinhas);
+    } else if (productPinceis) {
+      res.json(productPinceis);
+    } else if (productPanelas) {
+      res.json(productPanelas);
+    } else {
+      res.status(404).json({ message: "Product not found" });
+    }
   } catch (error) {
     res.json(error);
   }
