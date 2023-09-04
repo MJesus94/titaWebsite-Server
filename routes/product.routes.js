@@ -12,7 +12,7 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 //Create a Post and put the ID in the User Database
 
 router.post("/product", isAuthenticated, async (req, res, next) => {
-  const { category, title, imgUrl, price, cardSize, color } = req.body;
+  const { category, title, imgUrl, price, color } = req.body;
 
   try {
     const foundTitle = await Linhas.findOne({
@@ -29,7 +29,6 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
       !imgUrl ||
       !category ||
       !price ||
-      !cardSize ||
       color.length === 0
     ) {
       const missingFields = [];
@@ -37,7 +36,6 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
       if (!imgUrl) missingFields.push("imgUrl");
       if (!category) missingFields.push("category");
       if (!price) missingFields.push("price");
-      if (!cardSize) missingFields.push("cardSize");
       if (!color) missingFields.push("color");
 
       res.status(400).json({ message: "needs to be filled", missingFields });
@@ -58,7 +56,6 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
         description,
         category,
         price,
-        cardSize,
         color,
       });
     } else if (category === "Pincéis") {
@@ -69,7 +66,6 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
         description,
         category,
         price,
-        cardSize,
         color,
         tema,
         formato,
@@ -83,7 +79,6 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
         description,
         category,
         price,
-        cardSize,
         color,
         cobertura,
         formato,
@@ -178,7 +173,7 @@ router.put("/editProduct/:id", async (req, res, next) => {
   try {
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      { title, description, category, price, cardSize, color },
+      { title, description, category, price, color },
       { new: true }
     ).populate("comments");
 
