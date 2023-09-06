@@ -24,13 +24,7 @@ router.post("/product", isAuthenticated, async (req, res, next) => {
     const foundTitle3 = await Panelas.findOne({
       title: { $regex: new RegExp(`^${title}$`, "i") },
     });
-    if (
-      !title ||
-      !imgUrl ||
-      !category ||
-      !price ||
-      color.length === 0
-    ) {
+    if (!title || !imgUrl || !category || !price || color.length === 0) {
       const missingFields = [];
       if (!title) missingFields.push("title");
       if (!imgUrl) missingFields.push("imgUrl");
@@ -189,15 +183,42 @@ router.delete("/product/:id", isAuthenticated, async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const post = await Product.findById(id);
-    await Comment.deleteMany({ productId: id });
+    let deletedProduct;
+    let commentField;
+
+    deletedProduct = await Linhas.findByIdAndDelete(id);
+    commentField = "linhasId";
+    if (deletedProduct) {
+      res.json({
+        message: `Product with ID ${id} was successfully deleted from Linhas`,
+      });
+      return;
+    }
+
+    deletedProduct = await Pinceis.findByIdAndDelete(id);
+    if (deletedProduct) {
+      commentField = "pinceisId";
+      res.json({
+        message: `Product with ID ${id} was successfully deleted from Pinceis`,
+      });
+      return;
+    }
+
+    deletedProduct = await Panelas.findByIdAndDelete(id);
+    if (deletedProduct) {
+      commentField = "panelasId";
+      res.json({
+        message: `Product with ID ${id} was successfully deleted from Panelas`,
+      });
+      return;
+    }
+    await Comment.deleteMany({ [commentField]: id });
     await User.findByIdAndUpdate(req.payload._id, {
       $pull: { favourites: id },
     });
-    await Product.findByIdAndDelete(id);
-    res.json({ message: `Product with the id ${id} was successfully deleted` });
+    res.status(404).json({ error: `Product with ID ${id} not found` });
   } catch (error) {
-    res.json(error);
+    res.status(500).json(error);
   }
 });
 
