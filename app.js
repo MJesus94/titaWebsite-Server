@@ -14,6 +14,24 @@ const app = express();
 // ℹ️ This function is getting exported from the config folder. It runs most pieces of middleware
 require("./config")(app);
 
+const helmet = require("helmet");
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'wasm-unsafe-eval'",
+        "'inline-speculation-rules'",
+        "https://apis.google.com",
+      ],
+      imgSrc: ["'self'", "https://res.cloudinary.com"],
+      fontSrc: ["'self'", "https://fonts.googleapis.com"], // Add Google Fonts domain
+      // Add other directives as needed
+    },
+  })
+);
+
 // 👇 Start handling routes here
 
 const indexRoutes = require("./routes/index.routes");
