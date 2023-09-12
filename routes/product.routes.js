@@ -111,7 +111,6 @@ router.get("/product", async (req, res, next) => {
     const productLinhas = await Linhas.find();
     const productPinceis = await Pinceis.find();
     const productPanelas = await Panelas.find();
-    console.log({ productLinhas, productPinceis, productPanelas });
     res.json({ productLinhas, productPinceis, productPanelas });
   } catch (error) {
     res.json(error);
@@ -160,18 +159,66 @@ router.get("/product/:id", async (req, res, next) => {
 
 router.put("/editProduct/:id", async (req, res, next) => {
   const { id } = req.params;
-  const { title, description, category, price, cardSize, color } = req.body;
+  const { title, description, price, color } = req.body;
+  if (!title || !price || color.length === 0) {
+    const missingFields = [];
+    if (!title) missingFields.push("title");
+    if (!price) missingFields.push("price");
+    if (!color) missingFields.push("color");
+
+    res.status(400).json({ message: "needs to be filled", missingFields });
+    return;
+  }
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.json("The provided id is not valid");
   }
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      { title, description, category, price, color },
-      { new: true }
-    ).populate("comments");
+    const linhasProduct = await Linhas.findById(id);
+    const panelasProduct = await Panelas.findById(id);
 
-    res.json(updatedProduct);
+    if (linhasProduct) {
+      const updatedLinhasProduct = await Linhas.findByIdAndUpdate(
+        id,
+        { title, description, price, color },
+        { new: true }
+      ).populate("comments");
+
+      res.json(updatedLinhasProduct);
+    } else if (panelasProduct) {
+      const { massa, formato, cobertura } = req.body;
+      if (!massa || !formato || !cobertura) {
+        const missingFields = [];
+        if (!massa) missingFields.push("massa");
+        if (!formato) missingFields.push("formato");
+        if (!cobertura) missingFields.push("cobertura");
+
+        res.status(400).json({ message: "needs to be filled", missingFields });
+        return;
+      }
+      const updatedPanelasProduct = await Panelas.findByIdAndUpdate(
+        id,
+        { title, description, price, color, massa, formato, cobertura },
+        { new: true }
+      ).populate("comments");
+      res.json(updatedPanelasProduct);
+    } else {
+      const { tema, formato, tamanho } = req.body;
+      if (!tema || !formato || !tamanho) {
+        const missingFields = [];
+        if (!tema) missingFields.push("tema");
+        if (!formato) missingFields.push("formato");
+        if (!tamanho) missingFields.push("tamanho");
+
+        res.status(400).json({ message: "needs to be filled", missingFields });
+        return;
+      }
+      const updatedPinceisProduct = await Pinceis.findByIdAndUpdate(
+        id,
+        { title, description, price, color, tema, formato, tamanho },
+        { new: true }
+      ).populate("comments");
+      res.json(updatedPinceisProduct);
+    }
   } catch (error) {
     res.json(error);
   }
