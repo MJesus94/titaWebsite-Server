@@ -32,6 +32,8 @@ const userSchema = new Schema(
     admin: { type: String },
     confirmationCode: { type: String },
     isEmailConfirmed: { type: Boolean },
+    recoveryPasswordCode: { type: String },
+    isCodeConfirmed: { type: Boolean },
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

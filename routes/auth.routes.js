@@ -25,8 +25,8 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 const saltRounds = 10;
 
 function generateConfirmationCode() {
-  const length = 8; // Length of the confirmation code
-  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const length = 6; // Length of the confirmation code
+  const charset = "0123456789";
 
   let code = "";
   let bytes;
@@ -115,12 +115,14 @@ router.post("/signup", async (req, res, next) => {
     const hashedPassword = bcrypt.hashSync(password, salt);
 
     const createdUser = await User.create({
-      email,
+      email: email,
       password: hashedPassword,
-      name,
+      name: name,
       admin,
-      confirmationCode: "", // Initialize confirmation code with an empty string
-      isEmailConfirmed: false, // Set the email confirmation status to false
+      confirmationCode: "",
+      isEmailConfirmed: false,
+      recoveryPasswordCode: "",
+      isCodeConfirmed: false,
     });
 
     const confirmationCode = generateConfirmationCode();
@@ -131,7 +133,16 @@ router.post("/signup", async (req, res, next) => {
       to: email,
       from: "miguel.angelo.jesus@hotmail.com",
       subject: "Email Confirmation",
-      html: `Please confirm your email by clicking the following link: <a href="${process.env.BASE_URL}/confirm-email/${confirmationCode}">Confirm Email</a>`,
+      html: `<p>Hello,</p>
+
+      <p>Please confirm your email by clicking the following link: </p>
+      
+      <a href="${process.env.BASE_URL}/confirm-email/${confirmationCode}">Confirm Email</a>
+      
+      <p>If you already confirmed your email, you can ignore this message.</p>
+      
+      <p>Best regards,</p>
+      <p>Fonzie</p>`,
     };
     await sgMail.send(msg);
 
@@ -235,6 +246,107 @@ router.get("/confirm-email/:confirmationCode", async (req, res, next) => {
 
     // Redirect the user to a confirmation success page or send a success response
     res.status(200).json({ message: "Email confirmed successfully." });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/sendPasswordResetCode", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const domainExists = await checkEmailDomain(email);
+
+    if (!domainExists) {
+      res.status(400).json({ message: "Email domain does not exist." });
+      return;
+    }
+
+    // Find the user with the matching confirmation code
+    const user = await User.findOne({ email });
+
+    console.log(user);
+    if (!user) {
+      // Invalid confirmation code
+      res.status(400).json({ message: "Invalid email." });
+      return;
+    }
+
+    const recoveryPasswordCode = generateConfirmationCode();
+    user.recoveryPasswordCode = recoveryPasswordCode;
+    user.isCodeConfirmed = null;
+    await user.save();
+
+    const msg = {
+      to: email,
+      from: "miguel.angelo.jesus@hotmail.com",
+      subject: "Password Reset Code",
+      html: `<p>Hello,</p>
+
+      <p>We received a request to reset your password. Your password reset code is:</p>
+      
+      <h2>${recoveryPasswordCode}</h2>
+      
+      <p>If you didn't request a password reset, you can ignore this message.</p>
+      
+      <p>Best regards,</p>
+      <p>Fonzie</p>`,
+    };
+    await sgMail.send(msg);
+
+    // Redirect the user to a confirmation success page or send a success response
+    res.status(200).json({ sent: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/passwordResetCode", async (req, res, next) => {
+  try {
+    const { recoveryPasswordCode } = req.body;
+    console.log(recoveryPasswordCode);
+
+    // Find the user with the matching confirmation code
+    const user = await User.findOne({ recoveryPasswordCode });
+
+    if (!user) {
+      // Invalid confirmation code
+      res.status(400).json({ message: "Invalid confirmation code." });
+      return;
+    }
+
+    // Mark the user's email as confirmed
+    user.isCodeConfirmed = true;
+    user.recoveryPasswordCode = null;
+    await user.save();
+
+    // Redirect the user to a confirmation success page or send a success response
+    res.status(200).json({ message: "confirmed", user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/newPassword", async (req, res, next) => {
+  try {
+    const { password, confirmPassword, email } = req.body;
+
+    // Find the user with the matching confirmation code
+
+    const filter = { email: email };
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    const newPassword = { password: hashedPassword };
+
+    if (password === confirmPassword) {
+      await User.findOneAndUpdate(filter, newPassword);
+    } else {
+      res.status(400).json({ message: "Passwords must be the same" });
+      return;
+    }
+
+    // Redirect the user to a confirmation success page or send a success response
+    res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
     next(err);
   }
