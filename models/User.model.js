@@ -18,7 +18,8 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Name is required."],
     },
-    address: { type: [String] },
+    address: { street: String, zipCode: String, city: String },
+    phoneNumber: { type: String },
     imgUrl: {
       type: String,
       default:
@@ -34,6 +35,7 @@ const userSchema = new Schema(
     isEmailConfirmed: { type: Boolean },
     recoveryPasswordCode: { type: String },
     isCodeConfirmed: { type: Boolean },
+    orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`
