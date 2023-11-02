@@ -8,7 +8,11 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 
 router.get("/getUser", isAuthenticated, async (req, res, next) => {
   try {
-    const user = await User.findById(req.payload._id).populate("favourites");
+    const user = await User.findById(req.payload._id)
+      .populate("favourites.Pinceis")
+      .populate("favourites.Linhas")
+      .populate("favourites.Panelas");
+
     res.json(user);
   } catch (error) {
     res.json(error);
@@ -34,14 +38,17 @@ router.get("/getUser/:id", isAuthenticated, async (req, res, next) => {
 // Edit user profile information
 
 router.put("/editUser", isAuthenticated, async (req, res, next) => {
-  const { username, imgUrl, address } = req.body;
+  const { name, phoneNumber, street, zipCode, city } = req.body;
+  const address = { street: street, zipCode: zipCode, city: city };
+  console.log(req.body);
   try {
     const updatedUser = await User.findByIdAndUpdate(
       req.payload._id,
-      { username, imgUrl, address },
+      { name, phoneNumber, address },
       { new: true }
     );
     res.json(updatedUser);
+    console.log(updatedUser);
   } catch (error) {
     res.json(error);
   }

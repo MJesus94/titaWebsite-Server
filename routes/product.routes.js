@@ -342,4 +342,6 @@ router.get("/checkFavourite/:id", isAuthenticated, async (req, res, next) => {
   }
 });
 
+router.get("/add")
+
 module.exports = router;

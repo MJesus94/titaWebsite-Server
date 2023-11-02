@@ -36,6 +36,8 @@ const userSchema = new Schema(
     recoveryPasswordCode: { type: String },
     isCodeConfirmed: { type: Boolean },
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
+    refreshToken: String,
+    authToken: String,
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

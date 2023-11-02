@@ -1,36 +1,33 @@
+const express = require("express");
 const User = require("./models/User.model"); // Assuming this is how you import your User model
 
-const mongoose = require("mongoose");
+const app = express();
 
-mongoose.connect("mongodb://127.0.0.1:27017/titaWebsite", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// Middleware to parse JSON requests
+app.use(express.json());
 
-const db = mongoose.connection;
-
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
-db.once("open", () => {
-  console.log("Connected to MongoDB");
-});
-
-async function updateUsersWithAddress() {
+// Route to handle the update operation
+app.post("/updateUsersWithAddress", async (req, res) => {
   try {
-    const users = await User.find(); // Retrieve all users
-    console.log(users);
+    const users = await User.find();
     for (const user of users) {
       user.address = {
         street: "Street Name",
         zipCode: "2725-999",
         city: "Lisboa",
       };
-      await user.save(); // Save the updated user
-      console.log("here");
+      await user.save();
     }
     console.log("All users updated with address");
+    res.send("Update successful");
   } catch (error) {
     console.error("Error updating users:", error);
+    res.status(500).send("Error updating users");
   }
-}
+});
 
-updateUsersWithAddress();
+// Start the server
+const PORT = process.env.PORT || 5005;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

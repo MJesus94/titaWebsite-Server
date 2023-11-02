@@ -19,7 +19,11 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
 
 // Require necessary (isAuthenticated) middleware in order to control access to specific routes
-const { isAuthenticated } = require("../middleware/jwt.middleware.js");
+const {
+  isAuthenticated,
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../middleware/jwt.middleware.js");
 
 // How many rounds should bcrypt run the salt (default - 10 rounds)
 const saltRounds = 10;
@@ -123,6 +127,11 @@ router.post("/signup", async (req, res, next) => {
       isEmailConfirmed: false,
       recoveryPasswordCode: "",
       isCodeConfirmed: false,
+      orders: [],
+      address: { street: "Default", zipCode: "2725-999", city: "Lisboa" },
+      phoneNumber: "",
+      refreshToken: "",
+      favourites: [],
     });
 
     const confirmationCode = generateConfirmationCode();
@@ -169,7 +178,7 @@ router.post("/signup", async (req, res, next) => {
 });
 
 // POST  /auth/login - Verifies email and password and returns a JWT
-router.post("/login", (req, res, next) => {
+/* router.post("/login", (req, res, next) => {
   const { email, password } = req.body;
 
   // Check if email or password are provided as empty string
@@ -200,19 +209,130 @@ router.post("/login", (req, res, next) => {
         const payload = { _id, email, name };
 
         // Create a JSON Web Token and sign it
-        const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
+        const authToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        User.findByIdAndUpdate(
+          foundUser._id,
+          { $set: { refreshToken, authToken } },
+          { new: true },
+          (err, updatedUser) => {
+            if (err) {
+              // Handle error if update fails
+              return res.status(500).json({ message: "Internal Server Error" });
+            }
+
+            // Send the tokens as the response
+            res.status(200).json({ authToken, refreshToken });
+          }
+        );
+
+                const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
           algorithm: "HS256",
           expiresIn: "6h",
-        });
+        }); 
 
         // Send the token as the response
-        console.log(authToken);
-        res.status(200).json({ authToken: authToken });
+               res.status(200).json({ authToken: authToken }); 
       } else {
-        res.status(401).json({ message: "Unable to authenticate the user" });
+        res.status(401).json({
+          message:
+            "Credentials wrong, check if your email and password are correct",
+        });
       }
     })
     .catch((err) => next(err)); // In this case, we send error handling to the error handling middleware.
+}); */
+
+router.post("/login", async (req, res, next) => {
+  const { email, password } = req.body;
+
+  try {
+    // Check if email or password are provided as empty string
+    if (email === "" || password === "") {
+      return res.status(400).json({ message: "Provide email and password." });
+    }
+
+    // Check the users collection if a user with the same email exists
+    const foundUser = await User.findOne({ email });
+
+    if (!foundUser) {
+      return res.status(401).json({ message: "User not found." });
+    }
+
+    if (!foundUser.isEmailConfirmed) {
+      return res
+        .status(401)
+        .json({ message: "Please confirm your email first" });
+    }
+
+    // Compare the provided password with the one saved in the database
+    const passwordCorrect = bcrypt.compareSync(password, foundUser.password);
+
+    if (passwordCorrect) {
+      // Deconstruct the user object to omit the password
+      const { _id, email, name } = foundUser;
+
+      // Create an object that will be set as the token payload
+      const payload = { _id, email, name };
+
+      // Create a JSON Web Token and sign it
+      const authToken = generateAccessToken(payload);
+      const refreshToken = generateRefreshToken(payload);
+
+      const updatedUser = await User.findByIdAndUpdate(
+        foundUser._id,
+        { $set: { refreshToken, authToken } },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
+
+      // Send the tokens as the response
+      return res.status(200).json({ authToken, refreshToken });
+    } else {
+      return res.status(401).json({
+        message:
+          "Credentials wrong, check if your email and password are correct",
+      });
+    }
+  } catch (error) {
+    next(error); // Pass the error to the error handling middleware
+  }
+});
+
+router.post("/auth/refresh-token", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  try {
+    // Verify the refresh token
+    const user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    // Find the user in the database
+    const existingUser = await User.findById(user.userId);
+
+    if (!existingUser || existingUser.refreshToken !== refreshToken) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    // Generate a new access token
+    const authToken = jwt.sign(
+      { userId: user.userId },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    // Update the user's access token
+    existingUser.authToken = authToken;
+    await existingUser.save();
+
+    res.json({ authToken });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // GET  /auth/verify  -  Used to verify JWT stored on the client
